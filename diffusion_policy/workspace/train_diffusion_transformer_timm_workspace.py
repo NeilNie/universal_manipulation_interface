@@ -28,7 +28,9 @@ from diffusion_policy.common.checkpoint_util import TopKCheckpointManager
 from diffusion_policy.common.json_logger import JsonLogger
 from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
+from diffusion_policy.common.pytorch_util import optimizer_to
 from accelerate import Accelerator
+
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
@@ -152,11 +154,11 @@ class TrainDiffusionTransformerTimmWorkspace(BaseWorkspace):
         )
 
         # device transfer
-        # device = torch.device(cfg.training.device)
-        # self.model.to(device)
-        # if self.ema_model is not None:
-        #     self.ema_model.to(device)
-        # optimizer_to(self.optimizer, device)
+        device = torch.device(cfg.training.device)
+        self.model.to(device)
+        if self.ema_model is not None:
+            self.ema_model.to(device)
+        optimizer_to(self.optimizer, device)
 
         # accelerator
         train_dataloader, val_dataloader, self.model, self.optimizer, lr_scheduler = accelerator.prepare(
@@ -166,6 +168,7 @@ class TrainDiffusionTransformerTimmWorkspace(BaseWorkspace):
         if self.ema_model is not None:
             self.ema_model.to(device)
 
+        train_dataloader.dataset.__getitem__(0)
 
         # save batch for sampling
         train_sampling_batch = None
@@ -252,10 +255,10 @@ class TrainDiffusionTransformerTimmWorkspace(BaseWorkspace):
                 policy.eval()
 
                 # run rollout
-                if (self.epoch % cfg.training.rollout_every) == 0:
-                    runner_log = env_runner.run(policy)
-                    # log all
-                    step_log.update(runner_log)
+                # if (self.epoch % cfg.training.rollout_every) == 0:
+                #     runner_log = env_runner.run(policy)
+                #     # log all
+                #     step_log.update(runner_log)
 
                 # run validation
                 # if (self.epoch % cfg.training.val_every) == 0 and len(val_dataloader) > 0 and accelerator.is_main_process:
@@ -277,12 +280,12 @@ class TrainDiffusionTransformerTimmWorkspace(BaseWorkspace):
 
                 def log_action_mse(step_log, category, pred_action, gt_action):
                     B, T, _ = pred_action.shape
-                    pred_action = pred_action.view(B, T, -1, 10)
-                    gt_action = gt_action.view(B, T, -1, 10)
+                    pred_action = pred_action.view(-1, 10)
+                    gt_action = gt_action.view(-1, 10)
                     step_log[f'{category}_action_mse_error'] = torch.nn.functional.mse_loss(pred_action, gt_action)
-                    step_log[f'{category}_action_mse_error_pos'] = torch.nn.functional.mse_loss(pred_action[..., :3], gt_action[..., :3])
-                    step_log[f'{category}_action_mse_error_rot'] = torch.nn.functional.mse_loss(pred_action[..., 3:9], gt_action[..., 3:9])
-                    step_log[f'{category}_action_mse_error_width'] = torch.nn.functional.mse_loss(pred_action[..., 9], gt_action[..., 9])
+                    # step_log[f'{category}_action_mse_error_pos'] = torch.nn.functional.mse_loss(pred_action[..., :3], gt_action[..., :3])
+                    # step_log[f'{category}_action_mse_error_rot'] = torch.nn.functional.mse_loss(pred_action[..., 3:9], gt_action[..., 3:9])
+                    # step_log[f'{category}_action_mse_error_width'] = torch.nn.functional.mse_loss(pred_action[..., 9], gt_action[..., 9])
                 # run diffusion sampling on a training batch
                 if (self.epoch % cfg.training.sample_every) == 0 and accelerator.is_main_process:
                     with torch.no_grad():

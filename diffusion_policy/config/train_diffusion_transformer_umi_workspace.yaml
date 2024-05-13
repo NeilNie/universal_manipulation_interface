@@ -1,15 +1,22 @@
 defaults:
   - _self_
-  - task: umi
+  - task: kdm_place_kettle_sink
 
-name: train_diffusion_transformer_timm
+name: train_diffusion_transformer_timm_zero_action_zero_img
 _target_: diffusion_policy.workspace.train_diffusion_transformer_timm_workspace.TrainDiffusionTransformerTimmWorkspace
 
 task_name: ${task.name}
 shape_meta: ${task.shape_meta}
 exp_name: "default"
 
+horizon: 16
+n_obs_steps: 2
 n_action_steps: 8
+n_latency_steps: 0
+dataset_obs_steps: ${n_obs_steps}
+past_action_visible: False
+keypoint_visible_rate: 1.0
+obs_as_global_cond: True
 n_emb: 768
 
 policy:
@@ -107,15 +114,15 @@ ema:
   max_value: 0.9999
 
 dataloader:
-  batch_size: 64
-  num_workers: 8
+  batch_size: 24
+  num_workers: 15
   shuffle: True
   pin_memory: True
   persistent_workers: True
 
 val_dataloader:
-  batch_size: 64
-  num_workers: 8
+  batch_size: 24
+  num_workers: 15
   shuffle: False
   pin_memory: True
   persistent_workers: True

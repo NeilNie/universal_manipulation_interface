@@ -170,6 +170,8 @@ class UmiImageDataset(BaseImageDataset):
         if self.n_latency_steps > 0:
             action = action[self.n_latency_steps:]
 
+        import pdb; pdb.set_trace()
+
         torch_data = {
             'obs': dict_apply(obs_dict, torch.from_numpy),
             'action': torch.from_numpy(action)

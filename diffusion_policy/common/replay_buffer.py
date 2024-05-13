@@ -164,10 +164,10 @@ class ReplayBuffer:
                     meta[key] = value[:]
 
             if keys is None:
-                keys = src_root['data'].keys()
+                keys = src_root['obs'].keys()
             data = dict()
             for key in keys:
-                arr = src_root['data'][key]
+                arr = src_root['obs'][key]
                 data[key] = arr[:]
 
             root = {
@@ -181,16 +181,16 @@ class ReplayBuffer:
                 source_path='/meta', dest_path='/meta', if_exists=if_exists)
             data_group = root.create_group('data', overwrite=True)
             if keys is None:
-                keys = src_root['data'].keys()
+                keys = src_root['obs'].keys()
             for key in keys:
-                value = src_root['data'][key]
+                value = src_root['obs'][key]
                 cks = cls._resolve_array_chunks(
                     chunks=chunks, key=key, array=value)
                 cpr = cls._resolve_array_compressor(
                     compressors=compressors, key=key, array=value)
                 if cks == value.chunks and cpr == value.compressor:
                     # copy without recompression
-                    this_path = '/data/' + key
+                    this_path = '/obs/' + key
                     n_copied, n_skipped, n_bytes_copied = zarr.copy_store(
                         source=src_store, dest=store,
                         source_path=this_path, dest_path=this_path,
